@@ -1,9 +1,6 @@
-//Bibliotecas a serem utilizadas, biblioteca para conexão WiFi e para utilizar o protocolo HTTP
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
+#include <HTTPClient.h>
+#include <WiFi.h>
 
-
-//Instruções caso a API esteja em localHost
 /* this can be run with an emulated server on host:
         cd esp8266-core-root-dir
         cd tests/host
@@ -11,23 +8,21 @@
         bin/PostServer/PostServer
    then put your PC's IP address in SERVER_IP below, port 9080 (instead of default 80):
 */
-#define SERVER_IP "10.0.1.7:9080" // endereço do PC, caso a API esteja em localhost
-#define SERVER_IP "192.168.1.42"
+//#define SERVER_IP "10.0.1.7:9080" // PC address with emulation on host
+#define SERVER_IP "http://api-irrigacao.herokuapp.com/sensor"
 
-//Configuração de nome e senha da rede WiFi a ser conenctada
-#define ssid "Theodoro_2.4G"
-#define password  "20011999"
+#define STASSID "Theodoro_2.4G"
+#define STAPSK  "20011999"
 
+int idSensor = 2;
+int valorSensor = 851;
+#define apiKey "Copanga7"
 
-//Variável global responsável por guardar o pacote JSON a ser enviado
-String jsonSensor = "{\"idSensor\":15,\"valorSensor\":200}";
-
-
-//Funcionamento interno
-int Sensor1A, Sensor2A, Sensor1B, Sensor2B;
-int SensorSensivity = 550;
-int measurementInterval = 5000;
-
+void jsonSensor(int id, int value)
+{
+  String jsonPayload = "{\"key\":\"Copanga7\",\"idSensor\":" + String(id) + ",\"valorSensor\":" + String(value) + "}";
+  return jsonPayload;
+}
 
 void postHTTP(String endereco, String payload)
 {
@@ -63,96 +58,30 @@ void postHTTP(String endereco, String payload)
 }
 
 
-void humidityMeasurement()
-{
-  if(Sensor1A <= SensorSensivity)
-  {
-    Serial.print("Solo seco, sensor1A");
-    digitalWrite(0, HIGH);
-  }else{
-    digitalWrite(0, LOW);
-  }
-
-  if(Sensor2A <= SensorSensivity)
-  {
-    Serial.print("Solo seco, sensor2A");
-    digitalWrite(1, HIGH);
-  }else{
-    digitalWrite(1, LOW);
-  }
-
-  if(Sensor1B <= SensorSensivity)
-  {
-    Serial.print("Solo seco, sensor1B");
-    digitalWrite(2, HIGH);
-  }else{
-    digitalWrite(2, LOW);
-  }
-
-  if(Sensor2B <= SensorSensivity)
-  {
-    Serial.print("Solo seco, sensor2B");
-    digitalWrite(3, HIGH);
-  }else{
-    digitalWrite(3, LOW);
-  }
-}
-
 void setup() {
-  //Serial.begin(9600);
-  WiFi.begin(ssid, password);
 
-  for(int i; i = 0; i++)
-  {
-    pinMode(i, INPUT);
-  }
-
-  pinMode(7, OUTPUT);
-  pinMode(6, OUTPUT);
-
-  
-  //WiFi
   Serial.begin(115200);
 
   Serial.println();
   Serial.println();
   Serial.println();
 
-  //Inicia a conexão WiFi, passando o ssid e a senha
-  //WiFi.begin(ssid, password);
+  WiFi.begin(STASSID, STAPSK);
 
-  //Enquanto não está conectado à rede, aparece pontinhos a cada meio segundo no monitor serial
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-        
-  //Após conectar, aparece o endereço IP
   Serial.println("");
   Serial.print("Connected! IP address: ");
   Serial.println(WiFi.localIP());
+
 }
 
 void loop() {
-  int millisData;
-  
-  // put your main code here, to run repeatedly:
-  Sensor1A = digitalRead(0);
-  Sensor2A = digitalRead(1);
-  Sensor1B = digitalRead(2);
-  Sensor2B = digitalRead(3);
-  
-  
-  
-  //HTTP 
-  //Espera pela conexão WiFi, e a cada 10 segundos envia a requisição
-  if ((WiFi.status() == WL_CONNECTED)) {         
-    if(millis() - millisData >= measurementInterval)
-    {
-      //humidityMeasurement();
-      //Chama a função para enviar o endereço da API e o pacote JSON
-      postHTTP("https://api-irrigacao.herokuapp.com/sensor", jsonSensor);
-      delay(10000);
-    }
+  // wait for WiFi connection
+  if ((WiFi.status() == WL_CONNECTED)) {
+    postHTTP("http://api-irrigacao.herokuapp.com/sensor", jsonSensor(3, 1021));
   }
+  delay(20000);
 }

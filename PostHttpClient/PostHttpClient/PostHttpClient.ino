@@ -1,33 +1,33 @@
 #include <HTTPClient.h>
 #include <WiFi.h>
 
-/* this can be run with an emulated server on host:
-        cd esp8266-core-root-dir
-        cd tests/host
-        make ../../libraries/ESP8266WebServer/examples/PostServer/PostServer
-        bin/PostServer/PostServer
-   then put your PC's IP address in SERVER_IP below, port 9080 (instead of default 80):
-*/
-//#define SERVER_IP "10.0.1.7:9080" // PC address with emulation on host
-#define SERVER_IP "http://api-irrigacao.herokuapp.com/sensor"
+const String SensorAPI = "http://api-irrigacao.herokuapp.com/sensor";
+const String ValvulaAPI = "http://api-irrigacao.herokuapp.com/valvula";
 
+//Nome e senha do WiFi
 #define STASSID "Theodoro_2.4G"
 #define STAPSK  "20011999"
 
-int idSensor = 2;
-int valorSensor = 851;
+int idSensor = 7;
+int valorSensor = 777;
+
+//Senha da API
 #define apiKey "\"Copanga7\""
 
-/*void jsonSensor(int id, int value)
+String json(String caminho, int id, int value)
 {
-  String jsonPayload = "{\"key\":"apiKey",\"idSensor\":" + String(id) + ",\"valorSensor\":" + String(value) + "}";
+  String jsonPayload;
+  //verifica se o json é para o sensor ou para as valvulas
+  if(caminho == "sensor")
+  {
+    jsonPayload = "{\"key\":"apiKey",\"idSensor\":" + String(id) + ",\"valorSensor\":" + String(value) + "}";
+    return jsonPayload;
+  }else if(caminho == "valvula")
+  {
+    jsonPayload = "{\"key\":"apiKey",\"idValvula\":" + String(id) + ",\"segundos\":" + String(value) + "}";
+    return jsonPayload;
+  }
   
-}*/
-
-String json(int id, int value)
-{
-  String jsonPayload = "{\"key\":"apiKey",\"idSensor\":" + String(id) + ",\"valorSensor\":" + String(value) + "}";
-  return jsonPayload;
 }
 
 void postHTTP(String endereco, String payload)
@@ -59,19 +59,16 @@ void postHTTP(String endereco, String payload)
     } else {
       Serial.printf("Ocorreu erro ao enviar a requisição POST, erro: %s\n", http.errorToString(httpCode).c_str());
     }
-
     http.end();  
 }
 
 
 void setup() {
-
   Serial.begin(115200);
 
   Serial.println();
-  Serial.println();
-  Serial.println();
 
+  //inicia a conexão WiFi
   WiFi.begin(STASSID, STAPSK);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -81,13 +78,13 @@ void setup() {
   Serial.println("");
   Serial.print("Connected! IP address: ");
   Serial.println(WiFi.localIP());
-
 }
 
 void loop() {
-  // wait for WiFi connection
+  //Espera pela conexão WiFi
   if ((WiFi.status() == WL_CONNECTED)) {
-    postHTTP("http://api-irrigacao.herokuapp.com/sensor", json(3, 1021));
+    //comando para enviar requisição para o sensor, primeiro parametro é o endereço, e o segundo é um objeto String que retorna formatado o json
+    postHTTP(SensorAPI, json("sensor", 3, 1021));
   }
-  delay(20000);
+  delay(30000);
 }

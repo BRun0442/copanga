@@ -16,11 +16,17 @@
 
 int idSensor = 2;
 int valorSensor = 851;
-#define apiKey "Copanga7"
+#define apiKey "\"Copanga7\""
 
-void jsonSensor(int id, int value)
+/*void jsonSensor(int id, int value)
 {
-  String jsonPayload = "{\"key\":\"Copanga7\",\"idSensor\":" + String(id) + ",\"valorSensor\":" + String(value) + "}";
+  String jsonPayload = "{\"key\":"apiKey",\"idSensor\":" + String(id) + ",\"valorSensor\":" + String(value) + "}";
+  
+}*/
+
+String json(int id, int value)
+{
+  String jsonPayload = "{\"key\":"apiKey",\"idSensor\":" + String(id) + ",\"valorSensor\":" + String(value) + "}";
   return jsonPayload;
 }
 
@@ -81,7 +87,7 @@ void setup() {
 void loop() {
   // wait for WiFi connection
   if ((WiFi.status() == WL_CONNECTED)) {
-    postHTTP("http://api-irrigacao.herokuapp.com/sensor", jsonSensor(3, 1021));
+    postHTTP("http://api-irrigacao.herokuapp.com/sensor", json(3, 1021));
   }
   delay(20000);
 }

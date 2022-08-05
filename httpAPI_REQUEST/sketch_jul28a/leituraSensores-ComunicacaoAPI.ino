@@ -24,46 +24,6 @@ const String SensorAPI = "http://api-irrigacao.herokuapp.com/sensor";
 const String ValvulaAPI = "http://api-irrigacao.herokuapp.com/valvula";
 
 
-
-void valvula(int pin, int id, bool onOff)
-{
-  if(onOff == true && (valvulaTimer[id] == 0 || valvulaTimer[id] == null))
-  {
-    //contagem de tempo aqui
-    valvulaTimer[id] = millis();
-    digitalWrite(pin, HIGH);
-  }else if(onOff == false)
-  {
-    return (millis() - valvulaTimer[id]);
-  }
-}
-
-void humidityMeasurement()
-{
-  valorSensor[0] = map(analogRead(35), 0, 4095, 100, 0);
-  valorSensor[1] = map(analogRead(34), 0, 4095, 100, 0);
-}
-
-
-//função responsavel por receber os dados dos sensores ou valvulas e retornar o json a ser enviado
-String json(String caminho, int id, int value)
-{
-  String jsonPayload;
-  //verifica se o json é para o sensor ou para as valvulas
-  switch(caminho)
-  {
-    case "sensor":
-      jsonPayload = "{\"key\":"apiKey",\"idSensor\":" + String(id) + ",\"valorSensor\":" + String(value) + "}";
-    break;
-    
-    case "valvula":
-      jsonPayload = "{\"key\":"apiKey",\"idValvula\":" + String(id) + ",\"segundos\":" + String(value) + "}";
-    break;
-  }
-  
-  return jsonPayload;
-}
-
 //Void que envia as requisições POST
 void postHTTP(String endereco, String payload)
 {
@@ -95,6 +55,50 @@ void postHTTP(String endereco, String payload)
       Serial.printf("Ocorreu erro ao enviar a requisição POST, erro: %s\n", http.errorToString(httpCode).c_str());
     }
     http.end();  
+}
+
+
+//função responsavel por receber os dados dos sensores ou valvulas e retornar o json a ser enviado
+String json(String caminho, int id, int value)
+{
+  String jsonPayload;
+  //verifica se o json é para o sensor ou para as valvulas
+  switch(caminho)
+  {
+    case "sensor":
+      jsonPayload = "{\"key\":"apiKey",\"idSensor\":" + String(id) + ",\"valorSensor\":" + String(value) + "}";
+    break;
+    
+    case "valvula":
+      jsonPayload = "{\"key\":"apiKey",\"idValvula\":" + String(id) + ",\"segundos\":" + String(value) + "}";
+    break;
+  }
+  
+  return jsonPayload;
+}
+
+void valvula(int pin, int id, bool onOff)
+{
+  //Caso queira ligar a válvula ela verifica se o indice do vetor é zero ou nulo
+  //se for, ele registra o tempo inicial
+  if(onOff == true && (valvulaTimer[id] == 0 || valvulaTimer[id] == null))
+  {
+    digitalWrite(pin, HIGH);
+    //contagem de tempo aqui
+    valvulaTimer[id] = millis();
+  }else if(onOff == false)
+  {
+    //Se eu desligar a valvula ele retorna o tempo corrido desde o acionamento da válvula
+    //que é igual ao meu tempo atual menos o tempo em que ela estava ligada
+    digitalWrite(pin, LOW);
+    return (millis() - valvulaTimer[id]);
+  }
+}
+
+void humidityMeasurement()
+{
+  valorSensor[0] = map(analogRead(35), 0, 4095, 100, 0);
+  valorSensor[1] = map(analogRead(34), 0, 4095, 100, 0);
 }
 
 

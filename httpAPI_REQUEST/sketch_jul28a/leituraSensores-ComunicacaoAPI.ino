@@ -8,9 +8,10 @@
 #define STASSID "Theodoro_2.4G"
 #define STAPSK  "20011999"
 
-//int idSensor = 7;
 int valorSensor[2];
-int valvula[2][2];
+int valvula[2];
+int valvulaTimer[] = 0;
+
 int measurementInterval = 10;
 int SensorSensivity = 55;
 int millisData = 0;
@@ -26,23 +27,14 @@ const String ValvulaAPI = "http://api-irrigacao.herokuapp.com/valvula";
 
 void valvula(int pin, int id, bool onOff)
 {
-  if(onOff == true)
+  if(onOff == true && (valvulaTimer[id] == 0 || valvulaTimer[id] == null))
   {
-    digitalWrite(pin, onOff);
     //contagem de tempo aqui
-  }else if(onOff == false){
-    return tempo;
-  }
-}
-
-void valvulaTimer()
-{
-  if(onOff == true)
+    valvulaTimer[id] = millis();
+    digitalWrite(pin, HIGH);
+  }else if(onOff == false)
   {
-    digitalWrite(pin, onOff);
-    //contagem de tempo aqui
-  }else if(onOff == false){
-    return tempo;
+    return (millis() - valvulaTimer[id]);
   }
 }
 
@@ -50,16 +42,6 @@ void humidityMeasurement()
 {
   valorSensor[0] = map(analogRead(35), 0, 4095, 100, 0);
   valorSensor[1] = map(analogRead(34), 0, 4095, 100, 0);
-  /*for(int i = 0; i >= (sizeof(valorSensor)/sizeof(int)); i++)
-  {
-    if(valorSensor[i] <= SensorSensivity)
-    {
-      //comando para enviar requisição para o sensor, primeiro parametro é o endereço, 
-      //e o segundo é um objeto String que retorna formatado o json
-      postHTTP(SensorAPI, json("sensor ", i, valorSensor[i]));
-      //acionaValvula();
-    }
-  }*/
 }
 
 
@@ -195,8 +177,8 @@ void loop() {
       //e o segundo é um objeto String que retorna formatado o json
       postHTTP(SensorAPI, json("sensor", 0, valorSensor[0]));
       postHTTP(SensorAPI, json("sensor", 1, valorSensor[1]));
-      postHTTP(ValvulaAPI, json("valvula", 0, random(0,4096)));
-      postHTTP(ValvulaAPI, json("valvula", 1, random(0,4096)));
+      postHTTP(ValvulaAPI, json("valvula", 0, valvula(24, 0, HIGH)));
+      postHTTP(ValvulaAPI, json("valvula", 1, valvula(25, 1, HIGH)));
     }
   }
 }

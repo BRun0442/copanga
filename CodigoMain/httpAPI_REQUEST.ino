@@ -11,15 +11,22 @@
 
 //Variaveis que armazenam a umidade, se a válvula está ligada 
 //e o tempo que ela está ativa, respectivamente.
-int valorSensor[2];
-int valvula[2];
-int valvulaTimer[2];
+#define QuantSensores 2
+int valorSensor[QuantSensores];
+int valvula[QuantSensores];
+int valvulaTimer[QuantSensores];
+
+#define sensor0 35
+#define sensor1 34
+
+#define valvula0 25
+#define valvula1 24
 
 //Intervalo em que irá medir a umidade e enviar as requisições para a api.
 //Sensibilidade, caso a umidade esteja abaixo desse valor, a valvula solenoide correspondente ativará,
 //molhando assim a terra
 int intervalo = 10;
-int sensibilidadeSensor = 55;
+int sensSensor = 65;
 
 //Variavel auxiliar do intervalo
 int millisData = 0;
@@ -35,8 +42,6 @@ const String ValvulaAPI = "http://api-irrigacao.herokuapp.com/valvula";
 //Função que envia as requisições POST
 void postHTTP(String endereco, String payload)
 {
-    
-
     //Cliente que está acessando, sendo este o próprio esp e a criação de uma instância de um cliente http
     WiFiClient client;
     HTTPClient http;
@@ -94,8 +99,21 @@ String json(String caminho, int id, int value)
 }
 
 //Função responsável por gerir as válvulas e o tempo em que elas estão ligadas
-int acionamentoValvula(int pin, int id, bool onOff)
+int acionamentoValvula(int id, bool onOff)
 {
+    int pin = 0;
+    
+    if(id == 0)
+    {
+      pin = valvula0;
+    }else if(id == 1)
+    {
+      pin = valvula1;
+    }
+    
+    //Define o pino selecionado como saida
+    pinMode(pin, OUTPUT);
+    
     //Caso queira ligar a válvula ela verifica se o indice do vetor é zero ou nulo, para evitar que ela
     //sobrescreva sobre o valor inicial, se for, ele registra o tempo inicial
     if(onOff == true && (valvulaTimer[id] == 0 || valvulaTimer[id] == NULL))
@@ -119,8 +137,37 @@ int acionamentoValvula(int pin, int id, bool onOff)
 //é aplicado uma regra de tres para transformar em porcentagem
 void humidityMeasurement()
 {
-    valorSensor[0] = map(analogRead(35), 0, 4095, 100, 0);
-    valorSensor[1] = map(analogRead(34), 0, 4095, 100, 0);
+    bool requisEnviada;
+    int millisAuxData;
+
+    //Medição dos valores dos sensores que são transformados em porcentagem 
+    //porque são lidos e retornam valores de 0 a 4095
+    valorSensor[0] = map(analogRead(sensor0), 0, 4095, 100, 0);
+    valorSensor[1] = map(analogRead(sensor1), 0, 4095, 100, 0);
+
+    for(int i = 0; i <= QuantSensores; i++)
+    {
+      while((valorSensor[i] < sensSensor) && (requisEnviada != true))
+      {
+          requisEnviada = true;
+          millisAuxData = millis();
+          acionamentoValvula(i - 1, true);
+          
+          if(millis() - millisData >= ((intervalo * 60000)/4))
+          {
+              requisEnviada = false;
+              
+              postHTTP(SensorAPI, json("sensor", 0, valorSensor[0]));
+              postHTTP(SensorAPI, json("sensor", 1, valorSensor[1]));
+          }
+      }
+
+      if(valorSensor[i] > sensSensor)
+      {
+          postHTTP(ValvulaAPI, json("valvula", 0, acionamentoValvula(valvula0, 0, LOW)));
+          postHTTP(ValvulaAPI, json("valvula", 1, acionamentoValvula(valvula1, 1, LOW)));
+      }
+    }
 }
 
 
@@ -205,7 +252,7 @@ void loop() {
             //refazendo assim o ciclo.
             millisData = millis();
 
-            //Medição dos sensores
+            //Medição dos sensores e caso seja menor que a variavel sensSensor ele envia uma requisição
             humidityMeasurement();
             
             //comando para enviar requisição para o sensor,o primeiro parametro é o endereço, 
